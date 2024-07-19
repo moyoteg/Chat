@@ -50,6 +50,7 @@ public struct ChatTheme {
         public var buttonBackground: Color
         public var addButtonBackground: Color
         public var sendButtonBackground: Color
+        public var messageMenuBackground: Color
 
         public var myMessage: Color
         public var friendMessage: Color
@@ -60,6 +61,12 @@ public struct ChatTheme {
 
         public var recordDot: Color
 
+        public var myMessageTime: Color
+        public var frientMessageTime: Color
+
+        public var timeCapsuleBackground: Color
+        public var timeCapsuleForeground: Color
+
         public init(
             grayStatus: Color = Color(hex: "AFB3B8"),
             errorStatus: Color = Color.red,
@@ -69,12 +76,17 @@ public struct ChatTheme {
             buttonBackground: Color = Color(hex: "989EAC"),
             addButtonBackground: Color = Color(hex: "#4F5055"),
             sendButtonBackground: Color = Color(hex: "#4962FF"),
+            messageMenuBackground: Color = Color.white,
             myMessage: Color = Color(hex: "4962FF"),
             friendMessage: Color = Color(hex: "EBEDF0"),
             textLightContext: Color = Color.black,
             textDarkContext: Color = Color.white,
             textMediaPicker: Color = Color(hex: "818C99"),
-            recordDot: Color = Color(hex: "F62121")
+            recordDot: Color = Color(hex: "F62121"),
+            myMessageTime: Color = .white.opacity(0.4),
+            frientMessageTime: Color = .black.opacity(0.4),
+            timeCapsuleBackground: Color = .black.opacity(0.4),
+            timeCapsuleForeground: Color = .white
         ) {
             self.grayStatus = grayStatus
             self.errorStatus = errorStatus
@@ -84,12 +96,17 @@ public struct ChatTheme {
             self.buttonBackground = buttonBackground
             self.addButtonBackground = addButtonBackground
             self.sendButtonBackground = sendButtonBackground
+            self.messageMenuBackground = messageMenuBackground
             self.myMessage = myMessage
             self.friendMessage = friendMessage
             self.textLightContext = textLightContext
             self.textDarkContext = textDarkContext
             self.textMediaPicker = textMediaPicker
             self.recordDot = recordDot
+            self.myMessageTime = myMessageTime
+            self.frientMessageTime = frientMessageTime
+            self.timeCapsuleBackground = timeCapsuleBackground
+            self.timeCapsuleForeground = timeCapsuleForeground
         }
     }
 
@@ -143,7 +160,6 @@ public struct ChatTheme {
             public var delete: Image
             public var edit: Image
             public var forward: Image
-            public var reply: Image
             public var retry: Image
             public var save: Image
             public var select: Image
@@ -209,7 +225,6 @@ public struct ChatTheme {
             delete: Image? = nil,
             edit: Image? = nil,
             forward: Image? = nil,
-            reply: Image? = nil,
             retry: Image? = nil,
             save: Image? = nil,
             select: Image? = nil,
@@ -276,7 +291,6 @@ public struct ChatTheme {
                 delete: delete ?? Image("delete", bundle: .current),
                 edit: edit ?? Image("edit", bundle: .current),
                 forward: forward ?? Image("forward", bundle: .current),
-                reply: reply ?? Image("reply", bundle: .current),
                 retry: retry ?? Image("retry", bundle: .current),
                 save: save ?? Image("save", bundle: .current),
                 select: select ?? Image("select", bundle: .current)

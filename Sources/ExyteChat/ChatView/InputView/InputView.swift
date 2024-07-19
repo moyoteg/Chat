@@ -37,6 +37,9 @@ public enum InputViewAction {
     case pauseRecord
     //    case location
     //    case document
+
+    case saveEdit
+    case cancelEdit
 }
 
 public enum InputViewState {
@@ -50,6 +53,8 @@ public enum InputViewState {
     case playingRecording
     case pausedRecording
 
+    case editing
+
     var canSend: Bool {
         switch self {
         case .hasTextOrMedia, .hasRecording, .isRecordingTap, .playingRecording, .pausedRecording: return true
@@ -58,8 +63,22 @@ public enum InputViewState {
     }
 }
 
+public enum AvailableInputType {
+    case full // media + text + audio
+    case textAndMedia
+    case textAndAudio
+    case textOnly
+
+    var isMediaAvailable: Bool {
+        [.full, .textAndMedia].contains(self)
+    }
+
+    var isAudioAvailable: Bool {
+        [.full, .textAndAudio].contains(self)
+    }
+}
+
 public struct InputViewAttachments {
-    public var text: String = ""
     public var medias: [Media] = []
     public var recording: Recording?
     public var replyMessage: ReplyMessage?
@@ -73,6 +92,7 @@ struct InputView: View {
     @ObservedObject var viewModel: InputViewModel
     var inputFieldId: UUID
     var style: InputViewStyle
+    var availableInput: AvailableInputType
     var messageUseMarkdown: Bool
 
     @StateObject var recordingPlayer = RecordingPlayer()
@@ -94,7 +114,7 @@ struct InputView: View {
     @State private var dragStart: Date?
     @State private var tapDelayTimer: Timer?
     @State private var cancelGesture = false
-    let tapDelay = 0.2
+    private let tapDelay = 0.2
 
     var body: some View {
         VStack {
@@ -110,7 +130,7 @@ struct InputView: View {
                         .fill(fieldBackgroundColor)
                 }
 
-                rigthOutsideButton
+                rightOutsideButton
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -128,7 +148,9 @@ struct InputView: View {
         } else {
             switch style {
             case .message:
-                attachButton
+                if availableInput.isMediaAvailable {
+                    attachButton
+                }
             case .signature:
                 if viewModel.mediaPickerMode == .cameraSelection {
                     addButton
@@ -150,7 +172,7 @@ struct InputView: View {
             case .isRecordingTap:
                 recordingInProgress
             default:
-                TextInputView(text: $viewModel.attachments.text, inputFieldId: inputFieldId, style: style)
+                TextInputView(text: $viewModel.text, inputFieldId: inputFieldId, style: style, availableInput: availableInput)
             }
         }
         .frame(minHeight: 48)
@@ -161,7 +183,7 @@ struct InputView: View {
         Group {
             switch state {
             case .empty, .waitingForRecordingPermission:
-                if case .message = style {
+                if case .message = style, availableInput.isMediaAvailable {
                     cameraButton
                 }
             case .isRecordingHold, .isRecordingTap:
@@ -178,36 +200,68 @@ struct InputView: View {
     }
 
     @ViewBuilder
-    var rigthOutsideButton: some View {
-        ZStack {
-            if [.isRecordingTap, .isRecordingHold].contains(state) {
-                RecordIndicator()
-                    .viewSize(80)
-                    .foregroundColor(theme.colors.sendButtonBackground)
+    var editingButtons: some View {
+        HStack {
+            Button {
+                onAction(.cancelEdit)
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.white)
+                    .fontWeight(.bold)
+                    .padding(5)
+                    .background(Circle().foregroundStyle(.red))
             }
-            Group {
-                if state.canSend {
-                    sendButton
-                } else {
-                    recordButton
-                        .highPriorityGesture(dragGesture())
-                }
-            }
-            .compositingGroup()
-            .overlay(alignment: .top) {
-                Group {
-                    if state == .isRecordingTap {
-                        stopRecordButton
-                    } else if state == .isRecordingHold {
-                        lockRecordButton
-                    }
-                }
-                .sizeGetter($overlaySize)
-                // hardcode 28 for now because sizeGetter returns 0 somehow
-                .offset(y: (state == .isRecordingTap ? -28 : -overlaySize.height) - 24)
+
+            Button {
+                onAction(.saveEdit)
+            } label: {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(.white)
+                    .fontWeight(.bold)
+                    .padding(5)
+                    .background(Circle().foregroundStyle(.green))
             }
         }
-        .viewSize(48)
+    }
+
+    @ViewBuilder
+    var rightOutsideButton: some View {
+        if state == .editing {
+            editingButtons
+                .frame(height: 48)
+        }
+        else {
+            ZStack {
+                if [.isRecordingTap, .isRecordingHold].contains(state) {
+                    RecordIndicator()
+                        .viewSize(80)
+                        .foregroundColor(theme.colors.sendButtonBackground)
+                }
+                Group {
+                    if state.canSend || availableInput == .textOnly {
+                        sendButton
+                            .disabled(!state.canSend)
+                    } else {
+                        recordButton
+                            .highPriorityGesture(dragGesture())
+                    }
+                }
+                .compositingGroup()
+                .overlay(alignment: .top) {
+                    Group {
+                        if state == .isRecordingTap {
+                            stopRecordButton
+                        } else if state == .isRecordingHold {
+                            lockRecordButton
+                        }
+                    }
+                    .sizeGetter($overlaySize)
+                    // hardcode 28 for now because sizeGetter returns 0 somehow
+                    .offset(y: (state == .isRecordingTap ? -28 : -overlaySize.height) - 24)
+                }
+            }
+            .viewSize(48)
+        }
     }
 
     @ViewBuilder

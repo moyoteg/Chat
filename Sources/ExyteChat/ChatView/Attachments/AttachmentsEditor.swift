@@ -11,7 +11,7 @@ import ActivityIndicatorView
 
 struct AttachmentsEditor<InputViewContent: View>: View {
 
-    typealias InputViewBuilderClosure = ChatView<EmptyView, InputViewContent>.InputViewBuilderClosure
+    typealias InputViewBuilderClosure = ChatView<EmptyView, InputViewContent, DefaultMessageMenuAction>.InputViewBuilderClosure
 
     @Environment(\.chatTheme) var theme
     @Environment(\.mediaPickerTheme) var pickerTheme
@@ -26,6 +26,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
     var messageUseMarkdown: Bool
     var orientationHandler: MediaPickerOrientationHandler
     var mediaPickerSelectionParameters: MediaPickerParameters?
+    var availableInput: AvailableInputType
 
     @State private var seleсtedMedias: [Media] = []
     @State private var currentFullscreenMedia: Media?
@@ -86,7 +87,10 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                 assembleSelectedMedia()
             }
             .onChange(of: inputViewModel.showPicker) { _ in
-                if !seleсtedMedias.isEmpty {
+                let showFullscreenPreview = mediaPickerSelectionParameters?.showFullscreenPreview ?? true
+                let selectionLimit = mediaPickerSelectionParameters?.selectionLimit ?? 1
+
+                if selectionLimit == 1 && !showFullscreenPreview {
                     assembleSelectedMedia()
                     inputViewModel.send()
                 }
@@ -108,7 +112,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
     var inputView: some View {
         Group {
             if let inputViewBuilder = inputViewBuilder {
-                inputViewBuilder($inputViewModel.attachments.text, inputViewModel.attachments, inputViewModel.state, .signature, inputViewModel.inputViewAction()) {
+                inputViewBuilder($inputViewModel.text, inputViewModel.attachments, inputViewModel.state, .signature, inputViewModel.inputViewAction()) {
                     globalFocusState.focus = nil
                 }
             } else {
@@ -116,6 +120,7 @@ struct AttachmentsEditor<InputViewContent: View>: View {
                     viewModel: inputViewModel,
                     inputFieldId: UUID(),
                     style: .signature,
+                    availableInput: availableInput,
                     messageUseMarkdown: messageUseMarkdown
                 )
             }
