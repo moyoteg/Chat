@@ -7,11 +7,12 @@
 
 import SwiftUI
 
-public struct Message: Identifiable, Hashable {
+public struct Message: Identifiable, Hashable, Sendable {
 
-    public enum Status: Equatable, Hashable {
+    public enum Status: Equatable, Hashable, Sendable {
         case sending
         case sent
+        case delivered
         case read
         case error(DraftMessage)
 
@@ -21,6 +22,8 @@ public struct Message: Identifiable, Hashable {
                 return hasher.combine("sending")
             case .sent:
                 return hasher.combine("sent")
+            case .delivered:
+                return hasher.combine("delivered")
             case .read:
                 return hasher.combine("read")
             case .error:
@@ -33,6 +36,8 @@ public struct Message: Identifiable, Hashable {
             case (.sending, .sending):
                 return true
             case (.sent, .sent):
+                return true
+            case (.delivered, .delivered):
                 return true
             case (.read, .read):
                 return true
@@ -51,6 +56,8 @@ public struct Message: Identifiable, Hashable {
 
     public var text: String
     public var attachments: [Attachment]
+    public var reactions: [Reaction]
+    public var giphyMediaId: String?
     public var recording: Recording?
     public var replyMessage: ReplyMessage?
 
@@ -62,6 +69,8 @@ public struct Message: Identifiable, Hashable {
                 createdAt: Date = Date(),
                 text: String = "",
                 attachments: [Attachment] = [],
+                giphyMediaId: String? = nil,
+                reactions: [Reaction] = [],
                 recording: Recording? = nil,
                 replyMessage: ReplyMessage? = nil) {
 
@@ -71,6 +80,8 @@ public struct Message: Identifiable, Hashable {
         self.createdAt = createdAt
         self.text = text
         self.attachments = attachments
+        self.giphyMediaId = giphyMediaId
+        self.reactions = reactions
         self.recording = recording
         self.replyMessage = replyMessage
     }
@@ -84,7 +95,7 @@ public struct Message: Identifiable, Hashable {
                 guard let thumbnailURL = await media.getThumbnailURL() else {
                     return nil
                 }
-
+                
                 switch media.type {
                 case .image:
                     return Attachment(id: UUID().uuidString, url: thumbnailURL, type: .image)
@@ -95,8 +106,20 @@ public struct Message: Identifiable, Hashable {
                     return Attachment(id: UUID().uuidString, thumbnail: thumbnailURL, full: fullURL, type: .video)
                 }
             }
-
-            return Message(id: id, user: user, status: status, createdAt: draft.createdAt, text: draft.text, attachments: attachments, recording: draft.recording, replyMessage: draft.replyMessage)
+            
+            let giphyMediaId = draft.giphyMedia?.id
+            
+            return Message(
+                id: id,
+                user: user,
+                status: status,
+                createdAt: draft.createdAt,
+                text: draft.text,
+                attachments: attachments,
+                giphyMediaId: giphyMediaId,
+                recording: draft.recording,
+                replyMessage: draft.replyMessage
+            )
         }
 }
 
@@ -108,11 +131,20 @@ extension Message {
 
 extension Message: Equatable {
     public static func == (lhs: Message, rhs: Message) -> Bool {
-        lhs.id == rhs.id && lhs.status == rhs.status
+        lhs.id == rhs.id &&
+        lhs.user == rhs.user &&
+        lhs.status == rhs.status &&
+        lhs.createdAt == rhs.createdAt &&
+        lhs.text == rhs.text &&
+        lhs.giphyMediaId == rhs.giphyMediaId &&
+        lhs.attachments == rhs.attachments &&
+        lhs.reactions == rhs.reactions &&
+        lhs.recording == rhs.recording &&
+        lhs.replyMessage == rhs.replyMessage
     }
 }
 
-public struct Recording: Codable, Hashable {
+public struct Recording: Codable, Hashable, Sendable {
     public var duration: Double
     public var waveformSamples: [CGFloat]
     public var url: URL?
@@ -124,9 +156,14 @@ public struct Recording: Codable, Hashable {
     }
 }
 
-public struct ReplyMessage: Codable, Identifiable, Hashable {
+public struct ReplyMessage: Codable, Identifiable, Hashable, Sendable {
     public static func == (lhs: ReplyMessage, rhs: ReplyMessage) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id &&
+        lhs.user == rhs.user &&
+        lhs.createdAt == rhs.createdAt &&
+        lhs.text == rhs.text &&
+        lhs.attachments == rhs.attachments &&
+        lhs.recording == rhs.recording
     }
 
     public var id: String
